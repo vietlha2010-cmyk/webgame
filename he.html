@@ -1,0 +1,2498 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>Câu Cá Vạn Cân</title>
+  <style>
+    :root{
+      --bg0:#071521;
+      --bg1:#0b2a3f;
+      --panel: rgba(10,14,18,.72);
+      --panel2: rgba(10,14,18,.88);
+      --txt:#eaf3ff;
+      --muted:#a9c3dd;
+      --accent:#57c7ff;
+      --warn:#ffd24a;
+      --danger:#ff4d4d;
+      --ok:#55f2a5;
+      --card: rgba(255,255,255,.06);
+      --border: rgba(255,255,255,.12);
+      --shadow: rgba(0,0,0,.35);
+    }
+    html,body{
+      margin:0; padding:0; height:100%;
+      background: radial-gradient(1200px 800px at 30% 20%, #113a5b 0%, var(--bg0) 55%, #050c12 100%);
+      overflow:hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--txt);
+      user-select:none;
+      -webkit-user-select:none;
+      touch-action:none;
+    }
+    canvas{
+      position:absolute; inset:0;
+      width:100vw; height:100vh;
+      display:block;
+      image-rendering: auto;
+    }
+
+    .overlay{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index:10;
+    }
+    .overlay.hidden{ display:none; }
+    .panel{
+      width:min(720px, calc(100vw - 24px));
+      background: var(--panel);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow: 0 18px 48px var(--shadow);
+      padding:18px 18px 14px;
+    }
+    .row{
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    .title{
+      font-size:20px; font-weight:800; letter-spacing:.2px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .subtitle{ color:var(--muted); font-size:13px; line-height:1.5; margin-top:6px; }
+    .btn{
+      appearance:none; border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      color:var(--txt);
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform .06s ease, background .12s ease, border-color .12s ease;
+    }
+    .btn:hover{ border-color: rgba(255,255,255,.22); }
+    .btn:active{ transform: translateY(1px) scale(.99); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(87,199,255,.22), rgba(87,199,255,.08));
+      border-color: rgba(87,199,255,.35);
+    }
+    .btn.ok{
+      background: linear-gradient(180deg, rgba(85,242,165,.22), rgba(85,242,165,.08));
+      border-color: rgba(85,242,165,.35);
+    }
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:12px;
+      padding:2px 7px;
+      border:1px solid rgba(255,255,255,.16);
+      border-bottom-color: rgba(0,0,0,.35);
+      border-radius:8px;
+      background: rgba(255,255,255,.06);
+      color: #d7e9ff;
+    }
+    .hr{ height:1px; background: rgba(255,255,255,.10); margin:12px 0; }
+
+    .grid3{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    @media (max-width: 640px){
+      .grid3{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      box-shadow: 0 10px 22px rgba(0,0,0,.25);
+    }
+    .card h4{ margin:0 0 6px; font-size:14px; }
+    .card p{ margin:0 0 10px; color:var(--muted); font-size:12px; line-height:1.35; }
+
+    .sliders{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .sliderRow{
+      display:flex; align-items:center; gap:10px; justify-content:space-between;
+      padding:10px 10px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+    }
+    .sliderRow label{ font-size:12px; color:var(--muted); }
+    input[type="range"]{
+      width:min(320px, 56vw);
+      accent-color: var(--accent);
+    }
+
+    #toast{
+      position:absolute;
+      left:50%; top:14px;
+      transform: translateX(-50%);
+      z-index:9;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(10,14,18,.62);
+      color:#eaf3ff;
+      font-weight:700;
+      font-size:12px;
+      letter-spacing:.2px;
+      box-shadow: 0 10px 22px rgba(0,0,0,.28);
+      pointer-events:none;
+      opacity:0;
+      transition: opacity .15s ease;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    /* Mobile controls */
+    #mobileControls{
+      position:absolute; left:0; right:0; bottom:10px;
+      display:none;
+      justify-content:center;
+      gap:10px;
+      z-index:8;
+      padding: 0 10px;
+      pointer-events:none;
+      flex-wrap:wrap;
+    }
+    #mobileControls .mBtn{
+      pointer-events:auto;
+      flex:1;
+      max-width: 220px;
+      background: rgba(10,14,18,.65);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius: 16px;
+      padding: 12px 10px;
+      text-align:center;
+      font-weight:900;
+      letter-spacing:.2px;
+      box-shadow: 0 12px 24px rgba(0,0,0,.32);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      position:relative;
+      overflow:hidden;
+    }
+    #mobileControls .mBtn small{
+      display:block;
+      margin-top:4px;
+      color: rgba(234,243,255,.72);
+      font-weight:700;
+      font-size:11px;
+    }
+    #mobileControls .mBtn:active{ transform: translateY(1px) scale(.99); }
+
+    /* Catch popup */
+    #overlayCatch .panel{ width:min(520px, calc(100vw - 24px)); }
+    #overlayCatch .big{
+      font-size:18px; font-weight:900; margin-top:2px;
+    }
+    #overlayCatch .meta{
+      color:var(--muted); font-size:12px; margin-top:6px; line-height:1.4;
+    }
+
+    #overlayUpgrade .panel{ width:min(820px, calc(100vw - 24px)); }
+
+    #overlayVictory .panel{ width:min(620px, calc(100vw - 24px)); }
+    #overlayVictory .big{
+      font-size:18px; font-weight:900; margin-top:2px;
+    }
+    #overlayVictory .meta{
+      color:var(--muted); font-size:12px; margin-top:6px; line-height:1.4;
+    }
+
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      font-size:12px;
+      color:#d7e9ff;
+      font-weight:800;
+    }
+
+    *{ -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div id="toast">...</div>
+
+  <div id="mobileControls">
+    <div class="mBtn" id="btnReel">REEL<small>Giữ để auto-click</small></div>
+    <div class="mBtn" id="btnEase">EASE<small>Giữ để nhả</small></div>
+    <div class="mBtn" id="btnPump">PUMP<small>Giật mạnh</small></div>
+    <div class="mBtn" id="btnFocus">FOCUS<small>Giảm tension (Q)</small></div>
+    <div class="mBtn" id="btnHarpoon">HARPOON<small>Kéo mạnh (E)</small></div>
+  </div>
+
+  <div id="overlayStart" class="overlay">
+    <div class="panel">
+      <div class="row">
+        <div class="title">Câu Cá Vạn Cân <span class="badge" id="stageBadge">Stage 1 · Hồ Vạn Cân</span></div>
+        <button class="btn primary" id="btnStart">Start</button>
+      </div>
+      <div class="subtitle">
+        Loop: cast → bite → giằng co → kéo lên → thưởng → câu tiếp.<br/>
+        <span class="kbd">Click</span> Reel · <span class="kbd">Shift</span>/<span class="kbd">Chuột phải</span> Ease · <span class="kbd">Space</span> Pump ·
+        <span class="kbd">Q</span> Focus · <span class="kbd">E</span> Harpoon ·
+        <span class="kbd">A/D</span> chỉnh hướng · <span class="kbd">Esc</span> Pause · <span class="kbd">F1</span> Debug
+      </div>
+      <div class="hr"></div>
+      <div class="subtitle">
+        Mục tiêu: mỗi Stage có Boss. <b>Câu được Boss là thắng Stage</b> và mở Stage tiếp theo.
+      </div>
+    </div>
+  </div>
+
+  <div id="overlayPause" class="overlay hidden">
+    <div class="panel">
+      <div class="row">
+        <div class="title">Pause</div>
+        <div class="row" style="gap:8px">
+          <button class="btn primary" id="btnResume">Resume</button>
+          <button class="btn" id="btnRestart">Restart Stage</button>
+        </div>
+      </div>
+      <div class="subtitle" style="margin-top:8px">
+        Volume (WebAudio tạo sau user gesture).
+      </div>
+      <div class="sliders">
+        <div class="sliderRow">
+          <label>Master</label>
+          <input id="volMaster" type="range" min="0" max="1" step="0.01" value="0.9"/>
+        </div>
+        <div class="sliderRow">
+          <label>Music</label>
+          <input id="volMusic" type="range" min="0" max="1" step="0.01" value="0.55"/>
+        </div>
+        <div class="sliderRow">
+          <label>SFX</label>
+          <input id="volSfx" type="range" min="0" max="1" step="0.01" value="0.8"/>
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="subtitle">
+        <span class="kbd">Esc</span> đóng/mở pause. Tab hidden sẽ tự pause.
+      </div>
+    </div>
+  </div>
+
+  <div id="overlayUpgrade" class="overlay hidden">
+    <div class="panel">
+      <div class="row">
+        <div>
+          <div class="title">Thẻ nâng cấp (Stage-based)</div>
+          <div class="subtitle">Chọn 1 trong 3. Buff chỉ tồn tại trong Stage hiện tại.</div>
+        </div>
+        <button class="btn" id="btnSkipUpgrade">Skip</button>
+      </div>
+      <div id="upgradeCards" class="grid3"></div>
+    </div>
+  </div>
+
+  <div id="overlayCatch" class="overlay hidden">
+    <div class="panel">
+      <div class="row">
+        <div>
+          <div class="title">Catch!</div>
+          <div class="big" id="catchName">...</div>
+          <div class="meta" id="catchMeta">...</div>
+        </div>
+        <button class="btn primary" id="btnContinue">Câu tiếp</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlayVictory" class="overlay hidden">
+    <div class="panel">
+      <div class="row">
+        <div>
+          <div class="title">Victory</div>
+          <div class="big" id="victoryTitle">...</div>
+          <div class="meta" id="victoryMeta">...</div>
+        </div>
+        <div class="row" style="gap:8px">
+          <button class="btn ok" id="btnNextStage">Qua Stage</button>
+          <button class="btn" id="btnReplayStage">Chơi lại Stage</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlayGameOver" class="overlay hidden">
+    <div class="panel">
+      <div class="row">
+        <div>
+          <div class="title">Stage Over</div>
+          <div class="subtitle" id="gameOverMeta">...</div>
+        </div>
+        <button class="btn primary" id="btnGameOverRestart">Chơi lại Stage</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  "use strict";
+
+  // =========================================================
+  //Core
+  // =========================================================
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+
+  const overlayStart = document.getElementById("overlayStart");
+  const overlayPause = document.getElementById("overlayPause");
+  const overlayUpgrade = document.getElementById("overlayUpgrade");
+  const overlayCatch = document.getElementById("overlayCatch");
+  const overlayGameOver = document.getElementById("overlayGameOver");
+  const overlayVictory = document.getElementById("overlayVictory");
+
+  const toastEl = document.getElementById("toast");
+
+  const btnStart = document.getElementById("btnStart");
+  const btnResume = document.getElementById("btnResume");
+  const btnRestart = document.getElementById("btnRestart");
+  const btnSkipUpgrade = document.getElementById("btnSkipUpgrade");
+  const btnContinue = document.getElementById("btnContinue");
+  const btnGameOverRestart = document.getElementById("btnGameOverRestart");
+
+  const btnNextStage = document.getElementById("btnNextStage");
+  const btnReplayStage = document.getElementById("btnReplayStage");
+
+  const catchNameEl = document.getElementById("catchName");
+  const catchMetaEl = document.getElementById("catchMeta");
+  const gameOverMetaEl = document.getElementById("gameOverMeta");
+
+  const victoryTitleEl = document.getElementById("victoryTitle");
+  const victoryMetaEl = document.getElementById("victoryMeta");
+  const stageBadge = document.getElementById("stageBadge");
+
+  const volMaster = document.getElementById("volMaster");
+  const volMusic = document.getElementById("volMusic");
+  const volSfx = document.getElementById("volSfx");
+
+  const mobileControls = document.getElementById("mobileControls");
+  const btnReel = document.getElementById("btnReel");
+  const btnEase = document.getElementById("btnEase");
+  const btnPump = document.getElementById("btnPump");
+  const btnFocus = document.getElementById("btnFocus");
+  const btnHarpoon = document.getElementById("btnHarpoon");
+
+  const STATE = { START:0, PLAY:1, PAUSE:2, UPGRADE:3, CATCH:4, GAMEOVER:5, VICTORY:6 };
+
+  // =========================================================
+  // Stage System (NEW)
+  // =========================================================
+  const STAGES = [
+    {
+      id: 1,
+      name: "Hồ Vạn Cân",
+      diff: { windMul:1.00, currentMul:1.00, hazardMul:1.00, fishForceMul:1.00, burstMul:1.00, thresholds:{warn:0.76, danger:0.92, break:1.22}},
+      boss: { name:"Boss: Cá Vạn Cân", wMin:320, wMax:900, hpMul:1.00 }
+    },
+    {
+      id: 2,
+      name: "Vịnh Cuồng Phong",
+      diff: { windMul:1.20, currentMul:1.12, hazardMul:1.15, fishForceMul:1.10, burstMul:1.10, thresholds:{warn:0.74, danger:0.90, break:1.20}},
+      boss: { name:"Boss: Kình Ngư Phong Bạo", wMin:520, wMax:1100, hpMul:1.25 }
+    },
+    {
+      id: 3,
+      name: "Dòng Xoáy Hắc Thủy",
+      diff: { windMul:1.30, currentMul:1.25, hazardMul:1.30, fishForceMul:1.20, burstMul:1.18, thresholds:{warn:0.72, danger:0.88, break:1.18}},
+      boss: { name:"Boss: Long Ngư Hắc Thủy", wMin:780, wMax:1400, hpMul:1.55 }
+    },
+    {
+      id: 4,
+      name: "Hố Sâu Thiên Cực",
+      diff: { windMul:1.42, currentMul:1.35, hazardMul:1.45, fishForceMul:1.32, burstMul:1.25, thresholds:{warn:0.70, danger:0.86, break:1.16}},
+      boss: { name:"Boss: Thần Ngư Thiên Cực", wMin:1100, wMax:1800, hpMul:1.95 }
+    },
+  ];
+
+  const CFG = {
+    physHz: 120,
+    maxAccum: 0.25,
+
+    shoreYFrac: 0.22,
+    waterYFrac: 0.28,
+
+    lineSegs: 22,
+    segLen: 18,
+    rodLen: 90,
+    angleMax: 0.65,
+
+    // stage thresholds are overridden dynamically
+    warnFrac: 0.76,
+    dangerFrac: 0.92,
+    breakFrac: 1.22,
+
+    baseBiteMin: 1.0,
+    baseBiteMax: 2.8,
+    telegraphTime: 0.50,
+
+    clickStep: 18,
+    clickDamageBase: 3.4,
+    clickDamageBurstMul: 0.42,
+    autoClickHz: 8.5,
+
+    easeSpeed: 170,
+
+    pumpCooldown: 0.95,
+    pumpImpulse: 200,
+    pumpDamage: 14,
+
+    fishDrag: 0.92,
+    fishBaseForce: 110,
+    fishBurstForce: 420,
+
+    rodDrainDanger: 0.060,
+    lineDrainDanger: 0.085,
+    hazardDrain: 0.14,
+
+    bossTime: 160,
+    bossKg: 220,
+    bossHeat: 0.58,
+
+    maxParticles: 220,
+
+    hudPad: 14,
+    bigBarW: 360,
+    bigBarH: 18,
+
+    // NEW SKILLS
+    focusCooldown: 14.0,
+    focusDuration: 4.0,
+    focusTensionMul: 0.68,  // lower tension while active
+
+    harpoonCooldown: 12.0,
+    harpoonDamage: 26,
+    harpoonPull: 0.085,     // pull fish towards shore
+    harpoonTensionSpike: 0.10, // add tension fraction spike momentarily
+  };
+
+  const Game = {
+    state: STATE.START,
+    playPhase: "IDLE",
+    t: 0,
+    runTime: 0,
+    dtFix: 1 / CFG.physHz,
+    accum: 0,
+    lastRAF: 0,
+    pausedByHidden: false,
+
+    stageIndex: 0, // 0..3
+    stageClearedMax: 0, // highest cleared stage id
+
+    shakeX: 0,
+    shakeY: 0,
+    shakeT: 0,
+
+    debug: false,
+    fps: 0,
+    _fpsAcc: 0,
+    _fpsFrames: 0,
+  };
+
+  // =========================================================
+  //Util
+  // =========================================================
+  function clamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
+  function lerp(a, b, t){ return a + (b - a) * t; }
+  function smooth01(t){ t = clamp(t,0,1); return t*t*(3-2*t); }
+  function randRange(rng, a, b){ return a + (b-a)*rng(); }
+  function randInt(rng, a, b){ return (a + ((b-a+1) * rng() | 0)); }
+  function dist(ax, ay, bx, by){
+    const dx = bx - ax, dy = by - ay;
+    return Math.hypot(dx, dy);
+  }
+  function mulberry32(seed){
+    let t = seed >>> 0;
+    return function(){
+      t += 0x6D2B79F5;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // =========================================================
+  //SaveLoad (extended)
+  // =========================================================
+  const Save = {
+    bestSingleKg: 0,
+    bestTotalKg: 0,
+    bestStageCleared: 0,
+    load(){
+      try{
+        const a = localStorage.getItem("vanCan_bestSingleKg");
+        const b = localStorage.getItem("vanCan_bestTotalKg");
+        const c = localStorage.getItem("vanCan_bestStageCleared");
+        this.bestSingleKg = a ? (+a || 0) : 0;
+        this.bestTotalKg = b ? (+b || 0) : 0;
+        this.bestStageCleared = c ? (+c || 0) : 0;
+      }catch(e){}
+    },
+    save(){
+      try{
+        localStorage.setItem("vanCan_bestSingleKg", String(this.bestSingleKg));
+        localStorage.setItem("vanCan_bestTotalKg", String(this.bestTotalKg));
+        localStorage.setItem("vanCan_bestStageCleared", String(this.bestStageCleared));
+      }catch(e){}
+    }
+  };
+  Save.load();
+  Game.stageClearedMax = Save.bestStageCleared;
+
+  // =========================================================
+  //Input
+  // =========================================================
+  const Input = {
+    isMobile: false,
+
+    reelClicks: 0,
+    reelHold: false,
+    reelHoldAcc: 0,
+
+    easeHeld: false,
+    pumpPressed: false,
+    focusPressed: false,
+    harpoonPressed: false,
+
+    shift: false,
+    left: false,
+    right: false,
+    escPressed: false,
+
+    dragAngle: 0,
+    dragActive: false,
+    dragStartX: 0,
+    pointerX: 0,
+    pointerY: 0,
+
+    init(){
+      const coarse = matchMedia && matchMedia("(pointer: coarse)").matches;
+      this.isMobile = coarse || ("ontouchstart" in window);
+      if(this.isMobile) mobileControls.style.display = "flex";
+
+      window.addEventListener("contextmenu", (e) => e.preventDefault(), { passive:false });
+
+      window.addEventListener("keydown", (e) => {
+        if(e.code === "ShiftLeft" || e.code === "ShiftRight") this.shift = true;
+        if(e.code === "KeyA" || e.code === "ArrowLeft") this.left = true;
+        if(e.code === "KeyD" || e.code === "ArrowRight") this.right = true;
+        if(e.code === "Space") { this.pumpPressed = true; e.preventDefault(); }
+        if(e.code === "KeyQ") { this.focusPressed = true; e.preventDefault(); }
+        if(e.code === "KeyE") { this.harpoonPressed = true; e.preventDefault(); }
+        if(e.code === "Escape") { this.escPressed = true; e.preventDefault(); }
+        if(e.code === "F1") { Game.debug = !Game.debug; e.preventDefault(); }
+      }, { passive:false });
+
+      window.addEventListener("keyup", (e) => {
+        if(e.code === "ShiftLeft" || e.code === "ShiftRight") this.shift = false;
+        if(e.code === "KeyA" || e.code === "ArrowLeft") this.left = false;
+        if(e.code === "KeyD" || e.code === "ArrowRight") this.right = false;
+      });
+
+      canvas.addEventListener("pointerdown", (e) => {
+        if(this.isMobile) return;
+        if(Game.state !== STATE.PLAY) return;
+
+        if(e.button === 0){
+          if(Game.playPhase === "FIGHT"){
+            this.reelClicks = Math.min(24, this.reelClicks + 1);
+          }
+          Audio.ensure();
+          return;
+        }
+        if(e.button === 2){
+          this.easeHeld = true;
+          canvas.setPointerCapture(e.pointerId);
+          e.preventDefault();
+          return;
+        }
+      }, { passive:false });
+
+      canvas.addEventListener("pointerup", (e) => {
+        if(this.isMobile) return;
+        this.easeHeld = false;
+      });
+
+      canvas.addEventListener("pointercancel", () => {
+        this.easeHeld = false;
+        this.dragActive = false;
+        this.reelHold = false;
+      });
+
+      canvas.addEventListener("pointerdown", (e) => {
+        if(!this.isMobile) return;
+        if(Game.state !== STATE.PLAY) return;
+        if(e.clientY > window.innerHeight - 160) return;
+        this.dragActive = true;
+        this.dragStartX = e.clientX;
+        this.pointerX = e.clientX;
+        this.pointerY = e.clientY;
+        this.dragAngle = 0;
+        e.preventDefault();
+      }, { passive:false });
+
+      canvas.addEventListener("pointermove", (e) => {
+        if(!this.isMobile) return;
+        if(!this.dragActive) return;
+        this.pointerX = e.clientX; this.pointerY = e.clientY;
+        const dx = this.pointerX - this.dragStartX;
+        this.dragAngle = clamp(dx / 220, -1, 1) * CFG.angleMax;
+        e.preventDefault();
+      }, { passive:false });
+
+      canvas.addEventListener("pointerup", () => { this.dragActive = false; });
+      canvas.addEventListener("pointercancel", () => { this.dragActive = false; });
+
+      const bindHold = (el, onDown, onUp) => {
+        el.addEventListener("pointerdown", (e) => { onDown(); el.setPointerCapture(e.pointerId); e.preventDefault(); }, { passive:false });
+        el.addEventListener("pointerup", (e) => { onUp(); e.preventDefault(); }, { passive:false });
+        el.addEventListener("pointercancel", () => { onUp(); });
+        el.addEventListener("pointerleave", () => { onUp(); });
+      };
+      bindHold(btnReel, () => { this.reelHold = true; }, () => { this.reelHold = false; this.reelHoldAcc = 0; });
+      bindHold(btnEase, () => { this.easeHeld = true; }, () => { this.easeHeld = false; });
+
+      btnPump.addEventListener("pointerdown", (e) => {
+        this.pumpPressed = true;
+        btnPump.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      }, { passive:false });
+
+      btnFocus.addEventListener("pointerdown", (e) => {
+        this.focusPressed = true;
+        btnFocus.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      }, { passive:false });
+
+      btnHarpoon.addEventListener("pointerdown", (e) => {
+        this.harpoonPressed = true;
+        btnHarpoon.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      }, { passive:false });
+
+      document.addEventListener("visibilitychange", () => {
+        if(document.hidden){
+          if(Game.state === STATE.PLAY){
+            Game.pausedByHidden = true;
+            setState(STATE.PAUSE);
+          }
+        }else{
+          if(Game.state === STATE.PAUSE && Game.pausedByHidden){
+            Game.pausedByHidden = false;
+            setState(STATE.PLAY);
+          }
+        }
+      });
+    },
+
+    fixedUpdate(dt){
+      if(this.reelHold && Game.state === STATE.PLAY && Game.playPhase === "FIGHT"){
+        this.reelHoldAcc += dt;
+        const step = 1 / CFG.autoClickHz;
+        if(this.reelHoldAcc >= step){
+          const n = Math.min(6, (this.reelHoldAcc / step) | 0);
+          this.reelClicks = Math.min(24, this.reelClicks + n);
+          this.reelHoldAcc -= n * step;
+          Audio.ensure();
+        }
+      }else{
+        this.reelHoldAcc = 0;
+      }
+    },
+
+    endFrame(){
+      this.pumpPressed = false;
+      this.focusPressed = false;
+      this.harpoonPressed = false;
+      this.escPressed = false;
+    }
+  };
+
+  // =========================================================
+  //World
+  // =========================================================
+  const World = {
+    w: 0, h: 0, dpr: 1,
+    shoreY: 0,
+    waterY: 0,
+    rng: mulberry32((Date.now() ^ (Math.random()*1e9|0)) >>> 0),
+
+    wind: 0,
+    current: 0,
+    hazard: 0,
+
+    hazardCount: 0,
+    hazardX: new Float32Array(6),
+    hazardY: new Float32Array(6),
+    hazardR: new Float32Array(6),
+
+    noiseCanvas: null,
+    noisePattern: null,
+
+    resetStageModifiers(){
+      const st = STAGES[Game.stageIndex];
+      const d = st.diff;
+
+      this.wind = randRange(this.rng, -32, 32) * d.windMul;
+      this.current = randRange(this.rng, -22, 22) * d.currentMul;
+      this.hazard = clamp(randRange(this.rng, 0.10, 0.45) * d.hazardMul, 0.08, 0.75);
+
+      this.hazardCount = 2 + (this.hazard > 0.33 ? 1 : 0) + (Game.stageIndex >= 2 ? 1 : 0);
+      this.hazardCount = clamp(this.hazardCount, 2, 5);
+
+      for(let i=0;i<this.hazardCount;i++){
+        const x = randRange(this.rng, this.w*0.38, this.w*0.92);
+        const y = randRange(this.rng, this.waterY + this.h*0.10, this.h*0.93);
+        const r = randRange(this.rng, 36, 70) * (0.85 + 0.65*this.hazard);
+        this.hazardX[i] = x;
+        this.hazardY[i] = y;
+        this.hazardR[i] = r;
+      }
+
+      // apply stage thresholds
+      CFG.warnFrac = st.diff.thresholds.warn;
+      CFG.dangerFrac = st.diff.thresholds.danger;
+      CFG.breakFrac = st.diff.thresholds.break;
+
+      UI.setModifierLine();
+      UI.setStageBadge();
+    },
+
+    resize(){
+      const dpr = Math.max(1, Math.min(2.25, window.devicePixelRatio || 1));
+      this.dpr = dpr;
+
+      const cssW = window.innerWidth;
+      const cssH = window.innerHeight;
+
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+      canvas.style.width = cssW + "px";
+      canvas.style.height = cssH + "px";
+
+      this.w = cssW;
+      this.h = cssH;
+      this.shoreY = Math.floor(cssH * CFG.shoreYFrac);
+      this.waterY = Math.floor(cssH * CFG.waterYFrac);
+
+      this.noiseCanvas = document.createElement("canvas");
+      this.noiseCanvas.width = 140;
+      this.noiseCanvas.height = 140;
+      const nctx = this.noiseCanvas.getContext("2d");
+      const img = nctx.createImageData(this.noiseCanvas.width, this.noiseCanvas.height);
+      const data = img.data;
+      for(let i=0;i<data.length;i+=4){
+        const v = (Math.random()*255)|0;
+        data[i] = v; data[i+1] = v; data[i+2] = v;
+        data[i+3] = (Math.random()*34)|0;
+      }
+      nctx.putImageData(img, 0, 0);
+      this.noisePattern = ctx.createPattern(this.noiseCanvas, "repeat");
+    }
+  };
+
+  // =========================================================
+  //RodLine
+  // =========================================================
+  const RodLine = {
+    rodBaseX: 0,
+    rodBaseY: 0,
+    rodAngle: 0,
+    rodAngleTarget: 0,
+
+    n: CFG.lineSegs,
+    segLen: CFG.segLen,
+
+    x: new Float32Array(CFG.lineSegs),
+    y: new Float32Array(CFG.lineSegs),
+    px: new Float32Array(CFG.lineSegs),
+    py: new Float32Array(CFG.lineSegs),
+
+    targetLen: 0,
+    minLen: 120,
+    maxLen: 860,
+
+    tipX: 0,
+    tipY: 0,
+
+    init(){
+      this.rodAngle = 0.16;
+      this.rodAngleTarget = 0.16;
+      this.targetLen = this.n * this.segLen;
+      for(let i=0;i<this.n;i++){
+        this.x[i] = 0; this.y[i] = 0;
+        this.px[i] = 0; this.py[i] = 0;
+      }
+    },
+
+    recastTo(fx, fy){
+      this.rodBaseX = clamp(World.w*0.12, 40, World.w*0.20);
+      this.rodBaseY = clamp(World.shoreY - 10, 40, World.shoreY);
+      const dx = fx - (this.rodBaseX + Math.cos(this.rodAngle)*CFG.rodLen);
+      const dy = fy - (this.rodBaseY + Math.sin(this.rodAngle)*CFG.rodLen);
+      const a = Math.atan2(dy, dx);
+      this.rodAngle = clamp(a, -CFG.angleMax, CFG.angleMax);
+      this.rodAngleTarget = this.rodAngle;
+
+      this.updateTip();
+
+      const sx = this.tipX, sy = this.tipY;
+      const dx2 = (fx - sx), dy2 = (fy - sy);
+      const L = Math.max(1e-3, Math.hypot(dx2, dy2));
+      const ux = dx2 / L, uy = dy2 / L;
+
+      const totalLen = clamp(L, this.minLen, this.maxLen);
+      this.targetLen = totalLen;
+
+      const step = totalLen / (this.n-1);
+      for(let i=0;i<this.n;i++){
+        const px = sx + ux * step * i;
+        const py = sy + uy * step * i;
+        this.x[i] = px; this.y[i] = py;
+        this.px[i] = px; this.py[i] = py;
+      }
+    },
+
+    updateTip(){
+      this.tipX = this.rodBaseX + Math.cos(this.rodAngle) * CFG.rodLen;
+      this.tipY = this.rodBaseY + Math.sin(this.rodAngle) * CFG.rodLen;
+    },
+
+    update(dt, fishX, fishY, wind, hazardIntensity){
+      const base = 0.16;
+      let add = 0;
+      if(Input.isMobile){
+        add = Input.dragAngle;
+      }else{
+        if(Input.left) add -= 0.55;
+        if(Input.right) add += 0.55;
+      }
+      this.rodAngleTarget = clamp(base + add, -CFG.angleMax, CFG.angleMax);
+      this.rodAngle = lerp(this.rodAngle, this.rodAngleTarget, 1 - Math.pow(0.001, dt));
+      this.updateTip();
+
+      const ease = Input.easeHeld || Input.shift;
+      if(Game.playPhase === "FIGHT" && ease){
+        this.targetLen += dt * CFG.easeSpeed;
+      }
+      this.targetLen = clamp(this.targetLen, this.minLen, this.maxLen);
+
+      const wx = wind * dt * dt;
+      for(let i=0;i<this.n;i++){
+        const x = this.x[i], y = this.y[i];
+        const vx = x - this.px[i];
+        const vy = y - this.py[i];
+        this.px[i] = x; this.py[i] = y;
+        this.x[i] = x + vx + wx;
+        this.y[i] = y + vy + 0.06 * dt * dt;
+      }
+
+      this.x[0] = this.tipX; this.y[0] = this.tipY;
+      const last = this.n - 1;
+      this.x[last] = lerp(this.x[last], fishX, 0.55);
+      this.y[last] = lerp(this.y[last], fishY, 0.55);
+
+      const desiredSeg = clamp(this.targetLen / (this.n - 1), 8, 34);
+      for(let k=0;k<5;k++){
+        this.x[0] = this.tipX; this.y[0] = this.tipY;
+        this.x[last] = lerp(this.x[last], fishX, 0.55);
+        this.y[last] = lerp(this.y[last], fishY, 0.55);
+
+        for(let i=0;i<last;i++){
+          const ax = this.x[i], ay = this.y[i];
+          const bx = this.x[i+1], by = this.y[i+1];
+          let dx = bx - ax, dy = by - ay;
+          const d = Math.max(1e-4, Math.hypot(dx, dy));
+          const diff = (d - desiredSeg) / d;
+          const offx = dx * diff * 0.5;
+          const offy = dy * diff * 0.5;
+
+          if(i !== 0){ this.x[i] += offx; this.y[i] += offy; }
+          if(i+1 !== last){ this.x[i+1] -= offx; this.y[i+1] -= offy; }
+        }
+      }
+
+      let abrasion = 0;
+      if(hazardIntensity > 0.001){
+        const hzN = World.hazardCount;
+        for(let i=3;i<this.n-2;i++){
+          const sx = this.x[i], sy = this.y[i];
+          if(sy < World.waterY) continue;
+          for(let h=0;h<hzN;h++){
+            const dx = sx - World.hazardX[h];
+            const dy = sy - World.hazardY[h];
+            const rr = World.hazardR[h];
+            if(dx*dx + dy*dy <= rr*rr){
+              abrasion += 1;
+              break;
+            }
+          }
+        }
+      }
+      return abrasion;
+    },
+
+    draw(g, tensionFrac, dangerState){
+      g.save();
+      g.lineWidth = 2.2;
+      g.lineJoin = "round";
+      g.lineCap = "round";
+      if(dangerState === 2) g.strokeStyle = "#ff4d4d";
+      else if(dangerState === 1) g.strokeStyle = "#ffd24a";
+      else g.strokeStyle = "rgba(220,245,255,.9)";
+
+      const jit = (dangerState === 2) ? (0.5 + 1.0*tensionFrac) : (dangerState === 1 ? 0.20 : 0);
+      const jx = jit ? (Math.sin(Game.t*22.0)*jit) : 0;
+      const jy = jit ? (Math.cos(Game.t*18.0)*jit) : 0;
+
+      g.beginPath();
+      g.moveTo(this.x[0]+jx, this.y[0]+jy);
+      for(let i=1;i<this.n;i++){
+        g.lineTo(this.x[i]+jx*0.35, this.y[i]+jy*0.35);
+      }
+      g.stroke();
+
+      g.lineWidth = 5.5;
+      g.strokeStyle = "rgba(220,245,255,.95)";
+      g.beginPath();
+      g.moveTo(this.rodBaseX, this.rodBaseY);
+      g.lineTo(this.tipX, this.tipY);
+      g.stroke();
+
+      g.fillStyle = "rgba(255,255,255,.9)";
+      g.beginPath();
+      g.arc(this.rodBaseX+8, this.rodBaseY+10, 6.5, 0, Math.PI*2);
+      g.fill();
+
+      g.restore();
+    }
+  };
+
+  // =========================================================
+  //FishAI
+  // =========================================================
+  const FishAI = {
+    active: false,
+    name: "",
+    rarity: "Common",
+    rarityTier: 0,
+    weightKg: 0,
+
+    boss: false,
+    bossPhase: 1,
+
+    x: 0, y: 0,
+    vx: 0, vy: 0,
+
+    hp: 0,
+    hpMax: 0,
+
+    burstTelegraph: 0,
+    burstTime: 0,
+    burstCooldown: 0,
+
+    spawn(fishDef, forceBoss){
+      this.active = true;
+
+      const st = STAGES[Game.stageIndex];
+      const isBoss = !!forceBoss || fishDef.rarity === "Boss";
+      this.boss = isBoss;
+
+      if(isBoss){
+        this.name = st.boss.name;
+        this.rarity = "Boss";
+        this.rarityTier = rarityTier("Boss");
+        this.weightKg = randRange(World.rng, st.boss.wMin, st.boss.wMax);
+      }else{
+        this.name = fishDef.name;
+        this.rarity = fishDef.rarity;
+        this.rarityTier = rarityTier(this.rarity);
+        this.weightKg = randRange(World.rng, fishDef.wMin, fishDef.wMax);
+      }
+
+      const baseHp = 28 + this.weightKg * 0.08 + this.rarityTier * 10 + (this.boss ? 70 : 0);
+      const stageMul = this.boss ? st.boss.hpMul : (1 + Game.stageIndex * 0.05);
+      this.hpMax = clamp(baseHp * stageMul, 24, this.boss ? 520 : 170);
+      this.hp = this.hpMax;
+
+      this.x = randRange(World.rng, World.w*0.45, World.w*0.92);
+      this.y = randRange(World.rng, World.waterY + World.h*0.12, World.h*0.92);
+      this.vx = randRange(World.rng, -26, 26);
+      this.vy = randRange(World.rng, -18, 18);
+
+      this.burstTelegraph = 0;
+      this.burstTime = 0;
+      this.burstCooldown = randRange(World.rng, 1.0, 2.0);
+
+      this.bossPhase = 1;
+    },
+
+    update(dt){
+      if(!this.active) return;
+
+      if(this.boss){
+        const frac = 1 - (this.hp / Math.max(1e-4, this.hpMax));
+        if(frac > 0.66) this.bossPhase = 3;
+        else if(frac > 0.33) this.bossPhase = 2;
+        else this.bossPhase = 1;
+      }
+
+      if(Game.playPhase === "FIGHT"){
+        const st = STAGES[Game.stageIndex];
+        const stageBurstMul = st.diff.burstMul;
+
+        const burstRate = this.boss
+          ? (this.bossPhase === 1 ? 1.0 : (this.bossPhase === 2 ? 0.78 : 0.58))
+          : 1.0;
+
+        if(this.burstTelegraph > 0){
+          this.burstTelegraph -= dt;
+          if(this.burstTelegraph <= 0){
+            this.burstTime = this.boss ? (this.bossPhase === 3 ? 0.52 : 0.72) : 0.78;
+            Audio.sfx("burst");
+          }
+        }else if(this.burstTime > 0){
+          this.burstTime -= dt;
+          if(this.burstTime <= 0){
+            this.burstCooldown = randRange(World.rng, 0.95, 2.0) * burstRate / stageBurstMul;
+          }
+        }else{
+          this.burstCooldown -= dt * stageBurstMul;
+          if(this.burstCooldown <= 0){
+            this.burstTelegraph = CFG.telegraphTime * (this.boss ? 0.85 : 1.0);
+            VFX.spawnBubbles(this.x, this.y, 10 + (this.boss ? 12 : 6));
+            Audio.sfx("tele");
+          }
+        }
+      }
+
+      const st = STAGES[Game.stageIndex];
+      const forceMul = st.diff.fishForceMul;
+
+      let fx = 0, fy = 0;
+      fx += World.current;
+      fy += Math.sin(Game.t*0.65 + this.x*0.01) * 9;
+
+      if(Game.playPhase === "FIGHT"){
+        const rx = RodLine.tipX, ry = RodLine.tipY;
+        let dx = this.x - rx, dy = this.y - ry;
+        const d = Math.max(1e-3, Math.hypot(dx, dy));
+        dx /= d; dy /= d;
+
+        if(this.burstTelegraph > 0){
+          fx += dx * 55 * forceMul;
+          fy += dy * 45 * forceMul;
+        }else if(this.burstTime > 0){
+          const burstF = CFG.fishBurstForce * forceMul * (this.boss ? (this.bossPhase === 1 ? 1.05 : (this.bossPhase === 2 ? 1.20 : 1.30)) : 1.0);
+          fx += dx * burstF;
+          fy += dy * burstF * 0.62;
+
+          if(this.boss && this.bossPhase >= 2){
+            const side = -dy;
+            fx += side * 220 * forceMul;
+          }
+        }else{
+          const baseF = CFG.fishBaseForce * forceMul * (0.75 + 0.22*this.rarityTier) * (this.boss ? 1.10 : 1.0);
+          fx += dx * baseF;
+          fy += dy * baseF * 0.30;
+        }
+      }
+
+      this.vx = (this.vx + fx * dt) * CFG.fishDrag;
+      this.vy = (this.vy + fy * dt) * CFG.fishDrag;
+
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
+
+      const minX = World.w*0.26, maxX = World.w*0.97;
+      const minY = World.waterY + 12, maxY = World.h*0.96;
+      if(this.x < minX){ this.x = minX; this.vx *= -0.35; }
+      if(this.x > maxX){ this.x = maxX; this.vx *= -0.35; }
+      if(this.y < minY){ this.y = minY; this.vy *= -0.25; }
+      if(this.y > maxY){ this.y = maxY; this.vy *= -0.25; }
+    },
+
+    draw(g){
+      if(!this.active) return;
+      g.save();
+
+      const isGlow = (this.rarityTier >= 2) || this.boss;
+      const rot = Math.atan2(this.vy, this.vx);
+      g.translate(this.x, this.y);
+      g.rotate(rot);
+
+      const w = 20 + Math.min(34, this.weightKg*0.05) + (this.boss ? 18 : 0);
+      const h = 10 + Math.min(22, this.weightKg*0.03) + (this.boss ? 10 : 0);
+
+      const col = rarityColor(this.rarity);
+      if(isGlow){
+        g.shadowColor = col;
+        g.shadowBlur = this.boss ? 16 : 11;
+      }
+
+      g.fillStyle = col;
+      g.beginPath();
+      g.ellipse(0, 0, w, h, 0, 0, Math.PI*2);
+      g.fill();
+
+      g.fillStyle = "rgba(255,255,255,.28)";
+      g.beginPath();
+      g.moveTo(-w*0.15, -h*0.20);
+      g.lineTo(-w*0.55, -h*0.85);
+      g.lineTo(-w*0.45, -h*0.10);
+      g.closePath();
+      g.fill();
+
+      g.beginPath();
+      g.moveTo(-w*0.15, h*0.20);
+      g.lineTo(-w*0.55, h*0.85);
+      g.lineTo(-w*0.45, h*0.10);
+      g.closePath();
+      g.fill();
+
+      g.fillStyle = "rgba(255,255,255,.18)";
+      g.beginPath();
+      g.moveTo(w*0.95, 0);
+      g.lineTo(w*1.35, -h*0.75);
+      g.lineTo(w*1.30, 0);
+      g.lineTo(w*1.35, h*0.75);
+      g.closePath();
+      g.fill();
+
+      g.shadowBlur = 0;
+      g.fillStyle = "rgba(0,0,0,.55)";
+      g.beginPath();
+      g.arc(-w*0.35, -h*0.20, 2.6, 0, Math.PI*2);
+      g.fill();
+      g.fillStyle = "rgba(255,255,255,.8)";
+      g.beginPath();
+      g.arc(-w*0.40, -h*0.26, 1.1, 0, Math.PI*2);
+      g.fill();
+
+      if(this.boss){
+        g.fillStyle = "rgba(255,255,255,.18)";
+        for(let i=0;i<3;i++){
+          const xx = -w*0.10 + i*w*0.22;
+          g.beginPath();
+          g.ellipse(xx, 0, w*0.06, h*0.55, 0.4, 0, Math.PI*2);
+          g.fill();
+        }
+      }
+
+      g.restore();
+
+      const frac = this.hp / Math.max(1e-4, this.hpMax);
+      const bw = this.boss ? 76 : 54;
+      const bh = 7;
+      const bx = this.x - bw/2;
+      const by = this.y - (this.boss ? 56 : 44);
+
+      g.save();
+      roundRect(g, bx, by, bw, bh, 5);
+      g.fillStyle = "rgba(10,14,18,.60)";
+      g.fill();
+      roundRect(g, bx, by, bw*clamp(frac,0,1), bh, 5);
+      g.fillStyle = this.boss ? "rgba(255,77,77,.95)" : "rgba(85,242,165,.95)";
+      g.fill();
+      g.strokeStyle = "rgba(255,255,255,.14)";
+      g.stroke();
+
+      g.fillStyle = "rgba(255,255,255,.85)";
+      g.font = "800 10px system-ui, sans-serif";
+      g.textAlign = "center";
+      g.fillText(`${Math.ceil(this.hp)}/${Math.ceil(this.hpMax)}`, this.x, by - 3);
+      g.restore();
+    }
+  };
+
+  function rarityTier(r){
+    switch(r){
+      case "Rare": return 1;
+      case "Epic": return 2;
+      case "Legendary": return 3;
+      case "Boss": return 5;
+      default: return 0;
+    }
+  }
+  function rarityColor(r){
+    switch(r){
+      case "Rare": return "rgba(120,190,255,.95)";
+      case "Epic": return "rgba(186,120,255,.95)";
+      case "Legendary": return "rgba(255,210,74,.95)";
+      case "Boss": return "rgba(255,77,77,.95)";
+      default: return "rgba(120,240,210,.92)";
+    }
+  }
+
+  // =========================================================
+  //ReelFight
+  // =========================================================
+  const ReelFight = {
+    totalKg: 0,
+    combo: 0,
+    coins: 0,
+    lives: 3,
+    breaks: 0,
+
+    tension: 0,
+    tensionFrac: 0,
+    dangerState: 0,
+    heat: 0,
+
+    rodDur: 1,
+    lineInt: 1,
+
+    biteTimer: 0,
+    teleTimer: 0,
+
+    pumpCd: 0,
+
+    // NEW SKILLS cooldown/active
+    focusCd: 0,
+    focusT: 0,
+    harpoonCd: 0,
+
+    bossQueued: false,
+    bossFought: false,
+
+    reelSoundT: 0,
+
+    resetStage(){
+      this.totalKg = 0;
+      this.combo = 0;
+      this.coins = 0;
+      this.lives = 3;
+      this.breaks = 0;
+
+      this.tension = 0;
+      this.tensionFrac = 0;
+      this.dangerState = 0;
+      this.heat = 0;
+
+      this.rodDur = 1;
+      this.lineInt = 1;
+
+      this.biteTimer = 0;
+      this.teleTimer = 0;
+
+      this.pumpCd = 0;
+      this.focusCd = 0;
+      this.focusT = 0;
+      this.harpoonCd = 0;
+
+      this.bossQueued = false;
+      this.bossFought = false;
+
+      this.reelSoundT = 0;
+
+      Upgrades.reset();
+    },
+
+    beginCast(){
+      Game.playPhase = "CASTING";
+      const fx = randRange(World.rng, World.w*0.50, World.w*0.86);
+      const fy = randRange(World.rng, World.waterY + World.h*0.12, World.h*0.86);
+
+      RodLine.recastTo(fx, fy);
+
+      VFX.spawnSplash(fx, World.waterY + 6, 14);
+      Audio.sfx("cast");
+
+      const biteChance = clamp(0.88 + Upgrades.biteChance * 0.10 + this.heat*0.30, 0.78, 0.99);
+      const tMin = lerp(CFG.baseBiteMin, 0.85, biteChance);
+      const tMax = lerp(CFG.baseBiteMax, 2.2, biteChance);
+      this.biteTimer = randRange(World.rng, tMin, tMax);
+
+      Game.playPhase = "WAIT_BITE";
+      FishAI.active = false;
+      Input.reelClicks = 0;
+    },
+
+    scheduleBossIfNeeded(){
+      if(this.bossFought || this.bossQueued) return;
+      // Boss per stage: require some time or kg + heat
+      const stNeedTime = 120 + Game.stageIndex*35;
+      const stNeedKg = 160 + Game.stageIndex*120;
+      if(Game.runTime >= stNeedTime || this.totalKg >= stNeedKg){
+        if(this.heat >= CFG.bossHeat){
+          this.bossQueued = true;
+          UI.toast("Mặt hồ rung... Boss đang đến!");
+        }
+      }
+    },
+
+    applyReelClicks(n){
+      if(!FishAI.active) return;
+
+      n = Math.min(8, n);
+
+      const burstMul = (FishAI.burstTime > 0 ? CFG.clickDamageBurstMul : 1.0);
+      const tier = FishAI.rarityTier;
+
+      const tierMul = 1.0 - Math.min(0.38, tier * 0.08) - (FishAI.boss ? 0.10 : 0);
+
+      const tensionPenalty = 1.0 - Math.min(0.35, Math.max(0, this.tensionFrac - CFG.warnFrac) * 0.55);
+
+      const dmgPer = CFG.clickDamageBase * Upgrades.reelPower * burstMul * tierMul * tensionPenalty;
+      const stepLen = CFG.clickStep * Upgrades.reelPower * (FishAI.burstTime > 0 ? 0.70 : 1.0);
+
+      for(let i=0;i<n;i++){
+        RodLine.targetLen = Math.max(RodLine.minLen, RodLine.targetLen - stepLen);
+        FishAI.hp -= dmgPer;
+
+        FishAI.x = lerp(FishAI.x, World.w*0.30, 0.012 * Upgrades.reelPower);
+        FishAI.y = lerp(FishAI.y, World.waterY + World.h*0.22, 0.006 * Upgrades.reelPower);
+
+        if((i & 1) === 0) VFX.spawnBubbles(FishAI.x, FishAI.y, 1);
+      }
+
+      this.reelSoundT = 0.10;
+    },
+
+    tryFocus(){
+      if(Game.playPhase !== "FIGHT") return;
+      if(this.focusCd > 0 || this.focusT > 0) return;
+      this.focusT = CFG.focusDuration;
+      this.focusCd = CFG.focusCooldown;
+      UI.toast("FOCUS: Giảm tension!");
+      Audio.sfx("tele");
+    },
+
+    tryHarpoon(){
+      if(Game.playPhase !== "FIGHT") return;
+      if(this.harpoonCd > 0) return;
+      if(!FishAI.active) return;
+
+      this.harpoonCd = CFG.harpoonCooldown;
+
+      const dmg = CFG.harpoonDamage * Upgrades.reelPower * (FishAI.boss ? 0.85 : 1.0);
+      FishAI.hp -= dmg;
+
+      FishAI.x = lerp(FishAI.x, World.w*0.28, CFG.harpoonPull);
+      FishAI.y = lerp(FishAI.y, World.waterY + World.h*0.20, CFG.harpoonPull*0.6);
+
+      // spike tension (risk)
+      this.tensionFrac = clamp(this.tensionFrac + CFG.harpoonTensionSpike, 0, 2.0);
+
+      VFX.spawnSplash(FishAI.x, World.waterY + 8, 14);
+      UI.toast("HARPOON: Kéo mạnh!");
+      Audio.sfx("pump_good");
+    },
+
+    update(dt){
+      if(Game.state !== STATE.PLAY) return;
+
+      Game.runTime += dt;
+      this.pumpCd = Math.max(0, this.pumpCd - dt);
+      this.focusCd = Math.max(0, this.focusCd - dt);
+      this.harpoonCd = Math.max(0, this.harpoonCd - dt);
+      this.focusT = Math.max(0, this.focusT - dt);
+      this.reelSoundT = Math.max(0, this.reelSoundT - dt);
+
+      if(Input.escPressed){
+        setState(STATE.PAUSE);
+        return;
+      }
+
+      this.scheduleBossIfNeeded();
+
+      if(Game.playPhase === "WAIT_BITE"){
+        this.biteTimer -= dt;
+        if(this.biteTimer <= 0){
+          Game.playPhase = "TELEGRAPH";
+          this.teleTimer = CFG.telegraphTime;
+          const lx = RodLine.x[RodLine.n-1];
+          VFX.spawnBubbles(lx, World.waterY + 6, 10);
+          Audio.sfx("bite_pre");
+        }
+      }else if(Game.playPhase === "TELEGRAPH"){
+        this.teleTimer -= dt;
+        if(this.teleTimer <= 0){
+          const fishDef = FishDB.roll(this.heat, this.bossQueued);
+          const isBoss = this.bossQueued;
+          FishAI.spawn(fishDef, isBoss);
+          if(isBoss){
+            this.bossQueued = false;
+            this.bossFought = true;
+            UI.toast("Boss đã cắn câu!");
+          }else{
+            UI.toast("Dính cá!");
+          }
+          Audio.sfx("bite");
+          Game.playPhase = "FIGHT";
+        }
+      }else if(Game.playPhase === "FIGHT"){
+        FishAI.update(dt);
+
+        const abrasionHits = RodLine.update(dt, FishAI.x, FishAI.y, World.wind, World.hazard);
+
+        if(Input.reelClicks > 0){
+          const n = Input.reelClicks;
+          Input.reelClicks = 0;
+          this.applyReelClicks(n);
+        }
+
+        // NEW SKILLS triggers
+        if(Input.focusPressed) this.tryFocus();
+        if(Input.harpoonPressed) this.tryHarpoon();
+
+        const d = dist(RodLine.tipX, RodLine.tipY, FishAI.x, FishAI.y);
+        const stretch = Math.max(0, d - RodLine.targetLen);
+
+        const burstMulBase = (FishAI.burstTime > 0 ? 1.25 : (FishAI.burstTelegraph > 0 ? 1.10 : 1.0));
+        const focusMul = (this.focusT > 0 ? CFG.focusTensionMul : 1.0);
+        const burstMul = burstMulBase * focusMul;
+
+        const elastic = clamp(Upgrades.lineElasticity, 0.80, 1.45);
+        let tension = (stretch * 0.42) * (1/elastic) * burstMul;
+
+        tension *= (1 + (Math.abs(World.wind)/120) * 0.08 + (Math.abs(World.current)/120) * 0.06);
+
+        this.tension = tension;
+        const maxT = Upgrades.maxTension * (0.60 + 0.40*this.rodDur) * (0.60 + 0.40*this.lineInt);
+        this.tensionFrac = clamp(tension / Math.max(1e-4, maxT), 0, 1.8);
+
+        const warn = CFG.warnFrac, dang = CFG.dangerFrac;
+        if(this.tensionFrac >= dang) this.dangerState = 2;
+        else if(this.tensionFrac >= warn) this.dangerState = 1;
+        else this.dangerState = 0;
+
+        Audio.setDanger(this.tensionFrac);
+
+        const reelOn = (this.reelSoundT > 0) || (Input.isMobile && Input.reelHold);
+        Audio.setReel(reelOn ? 1 : 0, this.tensionFrac);
+
+        if(Input.pumpPressed && this.pumpCd <= 0){
+          this.pumpCd = CFG.pumpCooldown;
+
+          const rx = RodLine.tipX, ry = RodLine.tipY;
+          let dx = rx - FishAI.x, dy = ry - FishAI.y;
+          const dd = Math.max(1e-3, Math.hypot(dx, dy));
+          dx /= dd; dy /= dd;
+
+          const imp = CFG.pumpImpulse * (FishAI.boss ? 0.90 : 1.0);
+          FishAI.vx += dx * imp;
+          FishAI.vy += dy * imp * 0.72;
+
+          const dmg = CFG.pumpDamage * (FishAI.burstTime > 0 ? 0.65 : 1.0) * Upgrades.reelPower;
+          FishAI.hp -= dmg;
+
+          this.heat = clamp(this.heat + 0.05, 0, 1);
+
+          VFX.spawnSplash(FishAI.x, World.waterY + 8, 10);
+          Audio.sfx("pump_good");
+        }
+
+        if(this.dangerState >= 1){
+          const k = (this.dangerState === 2) ? 1.35 : 0.65;
+          const over = Math.max(0, this.tensionFrac - CFG.warnFrac);
+          this.rodDur -= dt * CFG.rodDrainDanger * k * (0.65 + 0.9*over) * (1/Upgrades.rodDurability);
+          this.lineInt -= dt * CFG.lineDrainDanger * k * (0.65 + 1.0*over) * (1/Upgrades.lineIntegrity);
+        }
+        if(abrasionHits > 0){
+          const abr = abrasionHits * CFG.hazardDrain * World.hazard;
+          this.lineInt -= dt * abr * (1/Upgrades.lineIntegrity);
+        }
+
+        this.rodDur = clamp(this.rodDur, 0, 1);
+        this.lineInt = clamp(this.lineInt, 0, 1);
+
+        if(this.dangerState === 2){
+          const amp = 1.0 + 2.2 * (this.tensionFrac - CFG.dangerFrac);
+          Game.shakeT = 0.06;
+          Game.shakeX = (Math.sin(Game.t*44.0) * amp);
+          Game.shakeY = (Math.cos(Game.t*39.0) * amp * 0.7);
+        }
+
+        const breakNow = (this.tensionFrac >= CFG.breakFrac) || (this.rodDur <= 0) || (this.lineInt <= 0);
+        if(breakNow){
+          this.onBreak();
+          return;
+        }
+
+        if(FishAI.hp <= 0){
+          this.onCatch();
+          return;
+        }
+      }
+    },
+
+    onCatch(){
+      Game.playPhase = "RECOVER";
+
+      const kg = FishAI.weightKg;
+      const rarity = FishAI.rarity;
+      const tier = FishAI.rarityTier;
+      const boss = FishAI.boss;
+      const fishName = FishAI.name;
+
+      FishAI.active = false;
+
+      this.totalKg += kg;
+      this.combo = clamp(this.combo + 1, 0, 999);
+
+      const rarityMul = 1 + tier*0.35 + (boss ? 1.1 : 0);
+      const comboMul = 1 + Math.min(1.0, this.combo*0.04);
+      const gain = Math.floor(kg * 0.45 * rarityMul * comboMul * (1 + Upgrades.coinBonus));
+      this.coins += gain;
+
+      this.heat = clamp(this.heat + 0.08 + tier*0.03, 0, 1);
+
+      if(kg > Save.bestSingleKg) Save.bestSingleKg = kg;
+      if(this.totalKg > Save.bestTotalKg) Save.bestTotalKg = this.totalKg;
+      Save.save();
+
+      VFX.spawnSplash(RodLine.x[RodLine.n-1], World.waterY + 8, 20);
+      Audio.sfx("catch");
+
+      // Boss catch => Victory Stage
+      if(boss){
+        onStageVictory(kg, fishName);
+        return;
+      }
+
+      catchNameEl.textContent = `${fishName}`;
+      catchMetaEl.innerHTML =
+        `Rarity: <b>${rarity}</b> · Nặng: <b>${kg.toFixed(1)} kg</b> · Combo: <b>x${this.combo}</b> · +${gain} coin<br/>Kỷ lục nặng nhất: <b>${Save.bestSingleKg.toFixed(1)} kg</b>`;
+      setState(STATE.CATCH);
+
+      UI.pendingUpgrade = (Math.random() < (0.38 + 0.10*this.heat));
+    },
+
+    onBreak(){
+      Game.playPhase = "RECOVER";
+      FishAI.active = false;
+
+      this.breaks++;
+      this.lives--;
+      this.combo = 0;
+      this.heat = clamp(this.heat - 0.14, 0, 1);
+
+      Audio.sfx("break");
+      VFX.spawnSplash(RodLine.x[RodLine.n-1], World.waterY + 8, 18);
+
+      UI.toast(this.lives > 0 ? `Đứt dây! Còn ${this.lives} mạng.` : "Gãy/đứt quá nhiều!");
+
+      this.rodDur = clamp(this.rodDur + 0.16, 0, 1);
+      this.lineInt = clamp(this.lineInt + 0.22, 0, 1);
+
+      if(this.lives <= 0){
+        setState(STATE.GAMEOVER);
+        gameOverMetaEl.innerHTML =
+          `Stage ${STAGES[Game.stageIndex].id}: <b>${STAGES[Game.stageIndex].name}</b><br/>Tổng: <b>${this.totalKg.toFixed(1)} kg</b> · Breaks: <b>${this.breaks}</b><br/>Best run: <b>${Save.bestTotalKg.toFixed(1)} kg</b> · Best single: <b>${Save.bestSingleKg.toFixed(1)} kg</b>`;
+        Audio.setReel(0,0);
+        Audio.setDanger(0);
+        return;
+      }
+
+      this.beginCast();
+    }
+  };
+
+  function onStageVictory(bossKg, bossName){
+    const st = STAGES[Game.stageIndex];
+    victoryTitleEl.textContent = `Bạn đã hạ ${bossName}`;
+    victoryMetaEl.innerHTML =
+      `Stage ${st.id}: <b>${st.name}</b> hoàn thành.<br/>Boss nặng: <b>${bossKg.toFixed(1)} kg</b> · Tổng Stage: <b>${ReelFight.totalKg.toFixed(1)} kg</b> · Coin: <b>${ReelFight.coins}</b>`;
+
+    // unlock next stage
+    const clearedId = st.id;
+    if(clearedId > Save.bestStageCleared){
+      Save.bestStageCleared = clearedId;
+      Save.save();
+    }
+
+    setState(STATE.VICTORY);
+  }
+
+  // =========================================================
+  //Upgrades
+  // =========================================================
+  const Upgrades = {
+    maxTensionBase: 760,
+    reelPowerBase: 1.0,
+    lineElasticityBase: 1.0,
+    rodDurabilityBase: 1.0,
+    biteChanceBase: 0,
+    coinBonusBase: 0,
+    lineIntegrityBase: 1.0,
+
+    maxTension: 760,
+    reelPower: 1.0,
+    lineElasticity: 1.0,
+    rodDurability: 1.0,
+    biteChance: 0,
+    coinBonus: 0,
+    lineIntegrity: 1.0,
+
+    reset(){
+      this.maxTension = this.maxTensionBase;
+      this.reelPower = this.reelPowerBase;
+      this.lineElasticity = this.lineElasticityBase;
+      this.rodDurability = this.rodDurabilityBase;
+      this.biteChance = this.biteChanceBase;
+      this.coinBonus = this.coinBonusBase;
+      this.lineIntegrity = this.lineIntegrityBase;
+    },
+
+    apply(id){
+      switch(id){
+        case "MAX_TENSION": this.maxTension += 90; break;
+        case "REEL_POWER": this.reelPower += 0.22; break;
+        case "ELASTICITY": this.lineElasticity += 0.14; break;
+        case "ROD_DUR": this.rodDurability += 0.18; break;
+        case "LINE_INT": this.lineIntegrity += 0.20; break;
+        case "BITE_CHANCE": this.biteChance += 0.10; break;
+        case "COIN_BONUS": this.coinBonus += 0.20; break;
+      }
+      UI.toast("Đã nhận nâng cấp.");
+    }
+  };
+
+  const UpgradePool = [
+    { id:"MAX_TENSION", title:"+MaxTension", desc:"Dây chịu lực tốt hơn, vùng an toàn rộng hơn.", tag:"Ổn định" },
+    { id:"REEL_POWER", title:"+ReelPower", desc:"Click trừ HP mạnh hơn và kéo hiệu quả hơn.", tag:"Sát thương" },
+    { id:"ELASTICITY", title:"+LineElasticity", desc:"Giảm “đỉnh tension” khi giằng co.", tag:"Mượt" },
+    { id:"ROD_DUR", title:"+RodDurability", desc:"Cần bền hơn khi tension vàng/đỏ.", tag:"Bền" },
+    { id:"LINE_INT", title:"+LineIntegrity", desc:"Giảm hao mòn khi quệt đá/cỏ nước.", tag:"Chống mài" },
+    { id:"BITE_CHANCE", title:"+BiteChance", desc:"Cắn câu nhanh hơn, đều hơn.", tag:"Nhanh" },
+    { id:"COIN_BONUS", title:"+Coin bonus", desc:"Tăng coin nhận được từ mỗi cá.", tag:"Giàu" },
+  ];
+
+  // =========================================================
+  //FishDB
+  // =========================================================
+  const FishDB = {
+    list: [
+      { name:"Cá Rô Phi", rarity:"Common", wMin:1.2, wMax:4.8, base:0.36 },
+      { name:"Cá Trê", rarity:"Common", wMin:2.2, wMax:8.4, base:0.22 },
+      { name:"Cá Chép", rarity:"Common", wMin:3.0, wMax:12.0, base:0.18 },
+
+      { name:"Cá Lóc", rarity:"Rare", wMin:6.0, wMax:18.0, base:0.12 },
+      { name:"Cá Vền Xanh", rarity:"Rare", wMin:5.5, wMax:16.0, base:0.08 },
+
+      { name:"Cá Hỏa Vân", rarity:"Epic", wMin:14.0, wMax:40.0, base:0.032 },
+      { name:"Cá Băng Ngân", rarity:"Epic", wMin:18.0, wMax:55.0, base:0.020 },
+
+      { name:"Cá Long Vỹ", rarity:"Legendary", wMin:38.0, wMax:110.0, base:0.008 },
+      { name:"Cá Hoàng Kim", rarity:"Legendary", wMin:55.0, wMax:160.0, base:0.004 },
+    ],
+    roll(heat, forceBoss){
+      if(forceBoss) return { name:"BOSS", rarity:"Boss", wMin:0, wMax:0, base:1 };
+
+      let sum = 0;
+      const w = new Float32Array(this.list.length);
+      for(let i=0;i<this.list.length;i++){
+        const f = this.list[i];
+        const tier = rarityTier(f.rarity);
+
+        // Stage makes higher tiers slightly more likely
+        const stageBias = 1 + Game.stageIndex * 0.10 * (tier >= 1 ? 1 : 0);
+
+        const mul = (1 + heat * (tier === 0 ? 0.0 : (tier === 1 ? 0.55 : (tier === 2 ? 1.05 : 1.6)))) * stageBias;
+        const ww = f.base * mul;
+        w[i] = ww;
+        sum += ww;
+      }
+      let r = World.rng() * sum;
+      for(let i=0;i<this.list.length;i++){
+        r -= w[i];
+        if(r <= 0) return this.list[i];
+      }
+      return this.list[0];
+    }
+  };
+
+  // =========================================================
+  //VFX
+  // =========================================================
+  const VFX = {
+    max: CFG.maxParticles,
+    alive: new Uint8Array(CFG.maxParticles),
+    type: new Uint8Array(CFG.maxParticles),
+    x: new Float32Array(CFG.maxParticles),
+    y: new Float32Array(CFG.maxParticles),
+    vx: new Float32Array(CFG.maxParticles),
+    vy: new Float32Array(CFG.maxParticles),
+    life: new Float32Array(CFG.maxParticles),
+    size: new Float32Array(CFG.maxParticles),
+
+    spawn(type, x, y, vx, vy, life, size){
+      for(let i=0;i<this.max;i++){
+        if(this.alive[i] === 0){
+          this.alive[i] = 1;
+          this.type[i] = type;
+          this.x[i] = x; this.y[i] = y;
+          this.vx[i] = vx; this.vy[i] = vy;
+          this.life[i] = life;
+          this.size[i] = size;
+          return;
+        }
+      }
+    },
+
+    spawnBubbles(x, y, n){
+      for(let i=0;i<n;i++){
+        const vx = randRange(World.rng, -18, 18);
+        const vy = randRange(World.rng, -45, -18);
+        const life = randRange(World.rng, 0.55, 1.25);
+        const s = randRange(World.rng, 2.0, 4.4);
+        this.spawn(0, x + randRange(World.rng,-10,10), y + randRange(World.rng,-6,6), vx, vy, life, s);
+      }
+    },
+    spawnSplash(x, y, n){
+      for(let i=0;i<n;i++){
+        const a = randRange(World.rng, -Math.PI, 0);
+        const sp = randRange(World.rng, 80, 240);
+        const vx = Math.cos(a)*sp;
+        const vy = Math.sin(a)*sp;
+        const life = randRange(World.rng, 0.25, 0.55);
+        const s = randRange(World.rng, 2.0, 6.6);
+        this.spawn(1, x + randRange(World.rng,-6,6), y + randRange(World.rng,-3,3), vx, vy, life, s);
+      }
+    },
+
+    update(dt){
+      for(let i=0;i<this.max;i++){
+        if(this.alive[i] === 0) continue;
+        this.life[i] -= dt;
+        if(this.life[i] <= 0){
+          this.alive[i] = 0;
+          continue;
+        }
+        const t = this.type[i];
+        if(t === 0){
+          this.vx[i] *= 0.99;
+          this.vy[i] *= 0.98;
+          this.x[i] += this.vx[i] * dt;
+          this.y[i] += this.vy[i] * dt;
+          if(this.y[i] < World.waterY + 4){
+            this.alive[i] = 0;
+          }
+        }else{
+          this.vy[i] += 520 * dt;
+          this.x[i] += this.vx[i] * dt;
+          this.y[i] += this.vy[i] * dt;
+          if(this.y[i] > World.waterY + 18) this.alive[i] = 0;
+        }
+      }
+    },
+
+    draw(g){
+      g.save();
+      g.fillStyle = "rgba(210,245,255,.55)";
+      for(let i=0;i<this.max;i++){
+        if(this.alive[i] === 0 || this.type[i] !== 0) continue;
+        const a = clamp(this.life[i] * 1.1, 0, 1) * 0.9;
+        g.globalAlpha = a;
+        g.beginPath();
+        g.arc(this.x[i], this.y[i], this.size[i], 0, Math.PI*2);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+      g.fillStyle = "rgba(255,255,255,.65)";
+      for(let i=0;i<this.max;i++){
+        if(this.alive[i] === 0 || this.type[i] !== 1) continue;
+        const a = clamp(this.life[i] * 3.0, 0, 1);
+        g.globalAlpha = a;
+        g.beginPath();
+        g.arc(this.x[i], this.y[i], this.size[i], 0, Math.PI*2);
+        g.fill();
+      }
+      g.restore();
+    }
+  };
+
+  // =========================================================
+  //Audio
+  // =========================================================
+  const Audio = {
+    ctx: null,
+    master: null,
+    musicGain: null,
+    sfxGain: null,
+    musicLP: null,
+    musicOscA: null,
+    musicOscB: null,
+
+    reelOsc: null,
+    reelGain: null,
+
+    noiseBuf: null,
+
+    masterVol: 0.9,
+    musicVol: 0.55,
+    sfxVol: 0.8,
+
+    danger: 0,
+
+    ensure(){
+      if(this.ctx) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+
+      this.ctx = new AC();
+      const ctx = this.ctx;
+
+      this.master = ctx.createGain();
+      this.musicGain = ctx.createGain();
+      this.sfxGain = ctx.createGain();
+      this.musicLP = ctx.createBiquadFilter();
+      this.musicLP.type = "lowpass";
+      this.musicLP.frequency.value = 760;
+      this.musicLP.Q.value = 0.8;
+
+      this.master.gain.value = this.masterVol;
+      this.musicGain.gain.value = this.musicVol;
+      this.sfxGain.gain.value = this.sfxVol;
+
+      this.musicGain.connect(this.musicLP);
+      this.musicLP.connect(this.master);
+      this.sfxGain.connect(this.master);
+      this.master.connect(ctx.destination);
+
+      const o1 = ctx.createOscillator();
+      const o2 = ctx.createOscillator();
+      o1.type = "sine";
+      o2.type = "triangle";
+      o1.frequency.value = 110;
+      o2.frequency.value = 165;
+      o1.detune.value = -6;
+      o2.detune.value = 7;
+
+      const mg = ctx.createGain();
+      mg.gain.value = 0.18;
+      o1.connect(mg); o2.connect(mg);
+      mg.connect(this.musicGain);
+      o1.start(); o2.start();
+      this.musicOscA = o1; this.musicOscB = o2;
+
+      this.reelOsc = ctx.createOscillator();
+      this.reelOsc.type = "square";
+      this.reelOsc.frequency.value = 160;
+      this.reelGain = ctx.createGain();
+      this.reelGain.gain.value = 0.0;
+      this.reelOsc.connect(this.reelGain);
+      this.reelGain.connect(this.sfxGain);
+      this.reelOsc.start();
+
+      this.noiseBuf = ctx.createBuffer(1, 44100, 44100);
+      const ch = this.noiseBuf.getChannelData(0);
+      for(let i=0;i<ch.length;i++){
+        ch[i] = (Math.random()*2-1) * 0.75;
+      }
+    },
+
+    setVolumes(m, mu, s){
+      this.masterVol = m; this.musicVol = mu; this.sfxVol = s;
+      if(!this.ctx) return;
+      const t = this.ctx.currentTime;
+      this.master.gain.setTargetAtTime(m, t, 0.02);
+      this.musicGain.gain.setTargetAtTime(mu, t, 0.02);
+      this.sfxGain.gain.setTargetAtTime(s, t, 0.02);
+    },
+
+    setDanger(frac){
+      this.danger = clamp(frac, 0, 1.25);
+      if(!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const d = clamp(frac, 0, 1);
+      const f = lerp(820, 320, smooth01(d));
+      this.musicLP.frequency.setTargetAtTime(f, t, 0.05);
+      this.musicOscA.frequency.setTargetAtTime(lerp(110, 128, smooth01(d)), t, 0.06);
+      this.musicOscB.frequency.setTargetAtTime(lerp(165, 194, smooth01(d)), t, 0.06);
+    },
+
+    setReel(on, tensionFrac){
+      if(!this.ctx) return;
+      const t = this.ctx.currentTime;
+      const g = on ? (0.03 + 0.06*clamp(tensionFrac,0,1)) : 0.0;
+      this.reelGain.gain.setTargetAtTime(g, t, 0.03);
+      const f = on ? lerp(150, 220, clamp(tensionFrac,0,1)) : 160;
+      this.reelOsc.frequency.setTargetAtTime(f, t, 0.03);
+    },
+
+    sfx(kind){
+      if(!this.ctx) return;
+      const ctx = this.ctx;
+      const t0 = ctx.currentTime;
+
+      const beep = (freq, dur, type, gain) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = type;
+        o.frequency.value = freq;
+        g.gain.value = 0.0001;
+        o.connect(g);
+        g.connect(this.sfxGain);
+        o.start(t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), t0 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.stop(t0 + dur + 0.02);
+      };
+
+      const noise = (dur, gain) => {
+        const src = ctx.createBufferSource();
+        src.buffer = this.noiseBuf;
+        const g = ctx.createGain();
+        const f = ctx.createBiquadFilter();
+        f.type = "highpass";
+        f.frequency.value = 520;
+        g.gain.value = 0.0001;
+        src.connect(f); f.connect(g); g.connect(this.sfxGain);
+        src.start(t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), t0 + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        src.stop(t0 + dur + 0.02);
+      };
+
+      switch(kind){
+        case "cast": beep(240, 0.09, "triangle", 0.12); beep(140, 0.13, "sine", 0.10); break;
+        case "bite_pre": beep(520, 0.06, "sine", 0.08); break;
+        case "bite": beep(680, 0.07, "square", 0.10); beep(420, 0.09, "triangle", 0.08); break;
+        case "tele": beep(380, 0.05, "sine", 0.06); break;
+        case "burst": beep(860, 0.09, "sawtooth", 0.08); noise(0.09, 0.07); break;
+        case "pump_good": beep(740, 0.07, "triangle", 0.12); beep(980, 0.05, "sine", 0.10); break;
+        case "break": noise(0.12, 0.12); beep(120, 0.16, "sawtooth", 0.10); break;
+        case "catch": beep(520, 0.08, "triangle", 0.12); beep(680, 0.10, "sine", 0.10); noise(0.08, 0.08); break;
+      }
+    }
+  };
+
+  // =========================================================
+  //UI
+  // =========================================================
+  const UI = {
+    modifierLine: "",
+    pendingUpgrade: false,
+    toastT: 0,
+
+    setStageBadge(){
+      const st = STAGES[Game.stageIndex];
+      stageBadge.textContent = `Stage ${st.id} · ${st.name}`;
+    },
+
+    setModifierLine(){
+      const w = World.wind;
+      const c = World.current;
+      const h = World.hazard;
+      const windTxt = `Gió ${w>=0? "→":"←"} ${Math.abs(w).toFixed(0)}`;
+      const curTxt  = `Dòng ${c>=0? "→":"←"} ${Math.abs(c).toFixed(0)}`;
+      const hazTxt  = `Abrasion ${Math.round(h*100)}%`;
+      this.modifierLine = `${windTxt} · ${curTxt} · ${hazTxt}`;
+    },
+
+    toast(msg){
+      toastEl.textContent = msg;
+      toastEl.style.opacity = "1";
+      this.toastT = 1.25;
+    },
+
+    update(dt){
+      if(this.toastT > 0){
+        this.toastT -= dt;
+        if(this.toastT <= 0) toastEl.style.opacity = "0";
+      }
+    },
+
+    showStart(show){ overlayStart.classList.toggle("hidden", !show); },
+    showPause(show){ overlayPause.classList.toggle("hidden", !show); },
+    showUpgrade(show){ overlayUpgrade.classList.toggle("hidden", !show); },
+    showCatch(show){ overlayCatch.classList.toggle("hidden", !show); },
+    showGameOver(show){ overlayGameOver.classList.toggle("hidden", !show); },
+    showVictory(show){ overlayVictory.classList.toggle("hidden", !show); },
+
+    buildUpgradeCards(){
+      const wrap = document.getElementById("upgradeCards");
+      wrap.innerHTML = "";
+
+      const picks = [];
+      const used = new Set();
+      const n = UpgradePool.length;
+      while(picks.length < 3){
+        const i = randInt(World.rng, 0, n-1);
+        if(used.has(i)) continue;
+        used.add(i);
+        picks.push(UpgradePool[i]);
+      }
+
+      for(let i=0;i<3;i++){
+        const u = picks[i];
+        const card = document.createElement("div");
+        card.className = "card";
+        const h4 = document.createElement("h4");
+        h4.textContent = u.title;
+        const p = document.createElement("p");
+        p.textContent = u.desc;
+        const b = document.createElement("button");
+        b.className = "btn primary";
+        b.textContent = "Chọn";
+        b.addEventListener("click", () => {
+          Upgrades.apply(u.id);
+          setState(STATE.PLAY);
+          ReelFight.beginCast();
+        });
+        card.appendChild(h4);
+        card.appendChild(p);
+        card.appendChild(b);
+        wrap.appendChild(card);
+      }
+    },
+
+    drawHUD(g){
+      const pad = CFG.hudPad;
+      const x0 = pad, y0 = pad;
+
+      const barW = Math.min(CFG.bigBarW, World.w - pad*2);
+      const barH = CFG.bigBarH;
+
+      const tf = ReelFight.tensionFrac;
+      const warn = CFG.warnFrac, dang = CFG.dangerFrac;
+
+      g.save();
+      g.globalAlpha = 0.92;
+      roundRect(g, x0, y0, barW, barH, 8);
+      g.fillStyle = "rgba(10,14,18,.55)";
+      g.fill();
+      g.strokeStyle = "rgba(255,255,255,.14)";
+      g.stroke();
+
+      const f = clamp(tf, 0, 1);
+      roundRect(g, x0, y0, barW*f, barH, 8);
+      g.fillStyle = (ReelFight.dangerState===2) ? "rgba(255,77,77,.92)" : (ReelFight.dangerState===1 ? "rgba(255,210,74,.92)" : "rgba(87,199,255,.92)");
+      g.fill();
+
+      g.globalAlpha = 0.85;
+      g.strokeStyle = "rgba(255,255,255,.25)";
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(x0 + barW*warn, y0);
+      g.lineTo(x0 + barW*warn, y0+barH);
+      g.moveTo(x0 + barW*dang, y0);
+      g.lineTo(x0 + barW*dang, y0+barH);
+      g.stroke();
+
+      g.globalAlpha = 1;
+      g.fillStyle = "rgba(255,255,255,.92)";
+      g.font = "700 12px system-ui, sans-serif";
+      g.fillText("TENSION", x0, y0 + barH + 14);
+
+      const sx = x0, sy = y0 + barH + 24;
+      const sw = barW, sh = 12;
+      const hpFrac = FishAI.active ? (FishAI.hp / Math.max(1e-4, FishAI.hpMax)) : 0;
+      roundRect(g, sx, sy, sw, sh, 7);
+      g.fillStyle = "rgba(10,14,18,.55)";
+      g.fill();
+      g.strokeStyle = "rgba(255,255,255,.12)";
+      g.stroke();
+
+      roundRect(g, sx, sy, sw*hpFrac, sh, 7);
+      g.fillStyle = FishAI.active && FishAI.boss ? "rgba(255,77,77,.90)" : "rgba(85,242,165,.90)";
+      g.fill();
+
+      g.fillStyle = "rgba(255,255,255,.80)";
+      g.font = "700 12px system-ui, sans-serif";
+      g.fillText("FISH HP", sx, sy + sh + 14);
+
+      const bx = x0, by = sy + sh + 22;
+      const bw = Math.min(220, barW);
+      const bh = 9;
+      drawSmallBar(g, bx, by, bw, bh, ReelFight.rodDur, "ROD", "rgba(220,245,255,.9)");
+      drawSmallBar(g, bx, by+14, bw, bh, ReelFight.lineInt, "LINE", "rgba(220,245,255,.9)");
+
+      const rx = Math.max(pad, World.w - pad - 270);
+      const ry = pad;
+
+      g.textAlign = "left";
+      g.fillStyle = "rgba(255,255,255,.92)";
+      g.font = "900 16px system-ui, sans-serif";
+      g.fillText(`Stage ${STAGES[Game.stageIndex].id}: ${STAGES[Game.stageIndex].name}`, rx, ry + 16);
+
+      g.font = "700 12px system-ui, sans-serif";
+      g.fillStyle = "rgba(210,230,250,.88)";
+      g.fillText(`${ReelFight.totalKg.toFixed(1)} kg · Coin ${ReelFight.coins} · Lives ${ReelFight.lives}`, rx, ry + 34);
+
+      g.fillStyle = "rgba(210,230,250,.78)";
+      g.fillText(`Time ${formatTime(Game.runTime)} · BestStage ${Save.bestStageCleared}`, rx, ry + 50);
+
+      g.fillStyle = "rgba(255,255,255,.72)";
+      g.font = "700 11px system-ui, sans-serif";
+      g.fillText(UI.modifierLine, rx, ry + 68);
+
+      const cx = rx, cy = ry + 86;
+      drawSkill(g, cx, cy, 64, "PUMP", ReelFight.pumpCd / CFG.pumpCooldown);
+      drawSkill(g, cx+74, cy, 64, "FOCUS", ReelFight.focusCd / CFG.focusCooldown, ReelFight.focusT > 0);
+      drawSkill(g, cx+148, cy, 78, "HARPOON", ReelFight.harpoonCd / CFG.harpoonCooldown);
+
+      if(Game.debug){
+        const dy = ry + 140;
+        g.fillStyle = "rgba(10,14,18,.58)";
+        roundRect(g, rx, dy-12, 262, 92, 12);
+        g.fill();
+        g.strokeStyle = "rgba(255,255,255,.12)";
+        g.stroke();
+
+        g.fillStyle = "rgba(255,255,255,.88)";
+        g.font = "700 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+        g.fillText(`FPS: ${Game.fps.toFixed(0)}`, rx+10, dy+8);
+        g.fillText(`Phase: ${Game.playPhase}`, rx+10, dy+24);
+        g.fillText(`Tension: ${ReelFight.tension.toFixed(1)} (${(ReelFight.tensionFrac*100).toFixed(0)}%)`, rx+10, dy+40);
+        g.fillText(`Heat: ${(ReelFight.heat*100).toFixed(0)}%  HP: ${FishAI.active?FishAI.hp.toFixed(0):0}`, rx+10, dy+56);
+        g.fillText(`FocusT: ${ReelFight.focusT.toFixed(1)}s`, rx+10, dy+72);
+      }
+
+      g.restore();
+    }
+  };
+
+  function roundRect(g, x, y, w, h, r){
+    r = Math.min(r, w*0.5, h*0.5);
+    g.beginPath();
+    g.moveTo(x+r, y);
+    g.arcTo(x+w, y, x+w, y+h, r);
+    g.arcTo(x+w, y+h, x, y+h, r);
+    g.arcTo(x, y+h, x, y, r);
+    g.arcTo(x, y, x+w, y, r);
+    g.closePath();
+  }
+  function drawSmallBar(g, x, y, w, h, frac, label, col){
+    g.save();
+    roundRect(g, x, y, w, h, 6);
+    g.fillStyle = "rgba(10,14,18,.55)";
+    g.fill();
+    roundRect(g, x, y, w*clamp(frac,0,1), h, 6);
+    g.fillStyle = col;
+    g.globalAlpha = 0.75;
+    g.fill();
+    g.globalAlpha = 1;
+    g.strokeStyle = "rgba(255,255,255,.10)";
+    g.stroke();
+
+    g.fillStyle = "rgba(255,255,255,.70)";
+    g.font = "800 10px system-ui, sans-serif";
+    g.fillText(label, x+w+8, y+h-1);
+    g.restore();
+  }
+  function drawSkill(g, x, y, size, label, cdFrac, active=false){
+    g.save();
+    roundRect(g, x, y, size, 28, 10);
+    g.fillStyle = active ? "rgba(85,242,165,.12)" : "rgba(10,14,18,.45)";
+    g.fill();
+    g.strokeStyle = "rgba(255,255,255,.10)";
+    g.stroke();
+    g.fillStyle = "rgba(255,255,255,.82)";
+    g.font = "900 10px system-ui, sans-serif";
+    g.fillText(label, x+10, y+18);
+
+    if(cdFrac > 0.001){
+      const cx = x + size - 14;
+      const cy = y + 14;
+      const rr = 9;
+      g.beginPath();
+      g.arc(cx, cy, rr, -Math.PI/2, -Math.PI/2 + Math.PI*2*(1-clamp(cdFrac,0,1)));
+      g.strokeStyle = "rgba(87,199,255,.95)";
+      g.lineWidth = 2.5;
+      g.stroke();
+
+      g.beginPath();
+      g.arc(cx, cy, rr, 0, Math.PI*2);
+      g.strokeStyle = "rgba(255,255,255,.10)";
+      g.lineWidth = 2.5;
+      g.stroke();
+    }
+    g.restore();
+  }
+  function formatTime(s){
+    s = Math.max(0, s);
+    const m = (s/60)|0;
+    const ss = (s - m*60)|0;
+    return `${m}:${ss.toString().padStart(2,"0")}`;
+  }
+
+  // =========================================================
+  //Debug
+  // =========================================================
+  function fpsTick(dt){
+    Game._fpsAcc += dt;
+    Game._fpsFrames++;
+    if(Game._fpsAcc >= 0.5){
+      Game.fps = Game._fpsFrames / Game._fpsAcc;
+      Game._fpsAcc = 0;
+      Game._fpsFrames = 0;
+    }
+  }
+
+  // =========================================================
+  //Renderer
+  // =========================================================
+  function drawBackground(g){
+    const sky = g.createLinearGradient(0, 0, 0, World.waterY);
+    sky.addColorStop(0, "#0d2a42");
+    sky.addColorStop(1, "#06131e");
+    g.fillStyle = sky;
+    g.fillRect(0, 0, World.w, World.waterY);
+
+    g.fillStyle = "rgba(5,10,14,.95)";
+    g.fillRect(0, World.shoreY-6, World.w, 10);
+
+    const water = g.createLinearGradient(0, World.waterY, 0, World.h);
+    water.addColorStop(0, "#08314a");
+    water.addColorStop(1, "#04121c");
+    g.fillStyle = water;
+    g.fillRect(0, World.waterY, World.w, World.h - World.waterY);
+
+    const t = Game.t;
+    g.save();
+    g.globalAlpha = 0.55;
+    g.strokeStyle = "rgba(210,245,255,.20)";
+    g.lineWidth = 2;
+    g.beginPath();
+    const y0 = World.waterY + 3;
+    const amp = 3.6 + 1.4*Math.abs(World.wind)/40;
+    const freq = 0.022;
+    for(let x=0;x<=World.w;x+=10){
+      const y = y0 + Math.sin(x*freq + t*1.6) * amp + Math.sin(x*0.011 + t*0.9) * 1.7;
+      if(x===0) g.moveTo(x, y);
+      else g.lineTo(x, y);
+    }
+    g.stroke();
+    g.restore();
+
+    if(World.hazard > 0.01){
+      g.save();
+      g.globalAlpha = 0.10 + 0.18*World.hazard;
+      g.fillStyle = "rgba(0,0,0,1)";
+      for(let i=0;i<World.hazardCount;i++){
+        g.beginPath();
+        g.arc(World.hazardX[i], World.hazardY[i], World.hazardR[i], 0, Math.PI*2);
+        g.fill();
+      }
+      g.restore();
+    }
+
+    if(World.noisePattern){
+      g.save();
+      g.globalAlpha = 0.085;
+      g.fillStyle = World.noisePattern;
+      g.fillRect(0, 0, World.w, World.h);
+      g.restore();
+    }
+  }
+
+  function draw(){
+    const dpr = World.dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    let sx = 0, sy = 0;
+    if(Game.shakeT > 0){
+      Game.shakeT -= (1/60);
+      sx = Game.shakeX;
+      sy = Game.shakeY;
+    }
+    ctx.translate(sx, sy);
+
+    drawBackground(ctx);
+
+    if(Game.playPhase === "FIGHT"){
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = "rgba(255,255,255,1)";
+      ctx.beginPath();
+      ctx.ellipse(RodLine.x[RodLine.n-1], World.waterY + 7, 18, 7, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    VFX.draw(ctx);
+    FishAI.draw(ctx);
+    RodLine.draw(ctx, ReelFight.tensionFrac, ReelFight.dangerState);
+
+    if(Game.playPhase === "FIGHT" && (FishAI.burstTelegraph > 0 || FishAI.burstTime > 0)){
+      const p = FishAI.burstTelegraph > 0 ? (FishAI.burstTelegraph/CFG.telegraphTime) : (FishAI.burstTime/0.78);
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.strokeStyle = "rgba(255,255,255,.45)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(FishAI.x, World.waterY + 8, 14 + (1-p)*18, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if(Game.state === STATE.PLAY){
+      UI.drawHUD(ctx);
+    }
+  }
+
+  // =========================================================
+  //Core loop
+  // =========================================================
+  function tick(ts){
+    if(!Game.lastRAF) Game.lastRAF = ts;
+    const dt = Math.min(0.05, (ts - Game.lastRAF) / 1000);
+    Game.lastRAF = ts;
+
+    Game.t += dt;
+
+    if(Game.state === STATE.PLAY){
+      Game.accum = Math.min(CFG.maxAccum, Game.accum + dt);
+
+      while(Game.accum >= Game.dtFix){
+        Input.fixedUpdate(Game.dtFix);
+        ReelFight.update(Game.dtFix);
+        VFX.update(Game.dtFix);
+        UI.update(Game.dtFix);
+        Game.accum -= Game.dtFix;
+      }
+      fpsTick(dt);
+    }else{
+      UI.update(dt);
+      fpsTick(dt);
+    }
+
+    if(Game.shakeT <= 0){
+      Game.shakeX *= 0.92;
+      Game.shakeY *= 0.92;
+    }
+
+    draw();
+
+    Input.endFrame();
+    requestAnimationFrame(tick);
+  }
+
+  // =========================================================
+  //State
+  // =========================================================
+  function setState(s){
+    Game.state = s;
+    UI.showStart(s === STATE.START);
+    UI.showPause(s === STATE.PAUSE);
+    UI.showUpgrade(s === STATE.UPGRADE);
+    UI.showCatch(s === STATE.CATCH);
+    UI.showGameOver(s === STATE.GAMEOVER);
+    UI.showVictory(s === STATE.VICTORY);
+
+    if(s === STATE.PAUSE){
+      Audio.setReel(0,0);
+      Audio.setDanger(0);
+    }
+    if(s === STATE.PLAY){
+      UI.showPause(false);
+      UI.showUpgrade(false);
+      UI.showCatch(false);
+      UI.showGameOver(false);
+      UI.showVictory(false);
+    }
+  }
+
+  // =========================================================
+  //UI hooks
+  // =========================================================
+  btnStart.addEventListener("click", () => {
+    Audio.ensure();
+    Audio.setVolumes(+volMaster.value, +volMusic.value, +volSfx.value);
+    startStage(Game.stageIndex);
+  });
+
+  btnResume.addEventListener("click", () => setState(STATE.PLAY));
+  btnRestart.addEventListener("click", () => startStage(Game.stageIndex));
+
+  btnSkipUpgrade.addEventListener("click", () => {
+    setState(STATE.PLAY);
+    ReelFight.beginCast();
+  });
+
+  btnContinue.addEventListener("click", () => {
+    if(UI.pendingUpgrade){
+      UI.pendingUpgrade = false;
+      UI.buildUpgradeCards();
+      setState(STATE.UPGRADE);
+    }else{
+      setState(STATE.PLAY);
+      ReelFight.beginCast();
+    }
+  });
+
+  btnGameOverRestart.addEventListener("click", () => startStage(Game.stageIndex));
+
+  btnReplayStage.addEventListener("click", () => startStage(Game.stageIndex));
+
+  btnNextStage.addEventListener("click", () => {
+    const next = Math.min(STAGES.length - 1, Game.stageIndex + 1);
+    // allow next stage if cleared previous or already unlocked
+    const currentId = STAGES[Game.stageIndex].id;
+    const unlockedMax = Math.max(Save.bestStageCleared, currentId);
+    if(next > Game.stageIndex && STAGES[next].id <= unlockedMax + 1){
+      Game.stageIndex = next;
+    }
+    startStage(Game.stageIndex);
+  });
+
+  volMaster.addEventListener("input", () => Audio.setVolumes(+volMaster.value, +volMusic.value, +volSfx.value));
+  volMusic.addEventListener("input", () => Audio.setVolumes(+volMaster.value, +volMusic.value, +volSfx.value));
+  volSfx.addEventListener("input", () => Audio.setVolumes(+volMaster.value, +volMusic.value, +volSfx.value));
+
+  function startStage(stageIndex){
+    Game.stageIndex = clamp(stageIndex, 0, STAGES.length - 1);
+
+    World.resetStageModifiers();
+    ReelFight.resetStage();
+    RodLine.init();
+
+    Game.runTime = 0;
+    Game.accum = 0;
+
+    setState(STATE.PLAY);
+    ReelFight.beginCast();
+
+    UI.toast(`Bắt đầu Stage ${STAGES[Game.stageIndex].id}.`);
+  }
+
+  // =========================================================
+  //Init
+  // =========================================================
+  function init(){
+    World.resize();
+    window.addEventListener("resize", () => {
+      World.resize();
+      UI.setModifierLine();
+      RodLine.recastTo(World.w*0.62, World.waterY + World.h*0.45);
+    });
+
+    Input.init();
+    RodLine.init();
+    World.resetStageModifiers();
+    UI.setStageBadge();
+    setState(STATE.START);
+
+    RodLine.recastTo(World.w*0.64, World.waterY + World.h*0.46);
+
+    requestAnimationFrame(tick);
+  }
+
+  init();
+
+})();
+</script>
+</body>
+</html>
